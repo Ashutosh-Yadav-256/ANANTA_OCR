@@ -1,0 +1,20 @@
+# Model weights (exceeds GitHub 100MB file limit; downloaded via download_weights.py)
+*.safetensors
+*.bin
+*.pt
+
+# Python runtime & build artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.tmp
+
+# Caches & Inference outputs
+.cache/
+output/
+*.log
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
