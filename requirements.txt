@@ -1,0 +1,35 @@
+# =====================================================================
+# ANANTA OCR: COMPLETE SYSTEM REQUIREMENTS
+# =====================================================================
+
+# Core Deep Learning & Modeling
+torch>=2.1.0
+torchvision
+transformers>=4.48.0
+tokenizers>=0.21.0
+huggingface-hub>=0.25.0
+
+# Image & Data Processing
+pillow>=10.0.0
+numpy
+einops>=0.8.2
+addict>=2.4.0
+easydict>=1.13
+pyyaml>=6.0
+
+# Networking & Progress Utilities
+requests>=2.28.0
+tqdm>=4.65.0
+
+# ---------------------------------------------------------------------
+# Optional Serving & Acceleration Dependencies
+# ---------------------------------------------------------------------
+# For remote HTTP client serving (AnantaClient):
+# openai>=1.0.0
+
+# For continuous-batching GPU inference (Ananta VllmRecognizer):
+# vllm>=0.6.0
+
+# For Ananta VLM KV-cache serving on Linux:
+# triton>=2.1.0
+# sglang (install custom wheel from wheel/ directory)
