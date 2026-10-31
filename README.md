@@ -9,11 +9,11 @@
 [![Triton](https://img.shields.io/badge/Triton-Hardware--Accelerated-00599C.svg)](https://github.com/openai/triton)
 [![Architecture: MoE + 2-Stage VLM](https://img.shields.io/badge/Architecture-MoE%20%2B%202--Stage%20VLM-purple.svg)](#architecture-specifications)
 [![Attention: SR-SWA](https://img.shields.io/badge/Attention-SR--SWA%20%2F%20DASH-green.svg)](#subsystem-1-ananta-vlm-engine)
-[![Languages: 22+ Indic & English](https://img.shields.io/badge/Languages-22%2B%20Indic%20%2B%20English-orange.svg)](#subsystem-2-ananta-block-engine)
+[![Languages: 22+ Indic & English](https://img.shields.io/badge/Languages-22%2B%20Indic%20%2B%20English-orange.svg)](#supported-languages-scripts--syntaxes)
 
 A unified visual document parsing architecture combining unlimited-horizon multi-page document understanding across 100+ pages with fine-grained 37-class layout analysis and multilingual block recognition.
 
-[Overview](#system-overview) • [Architecture Flows](#system-architecture-flows) • [Technical Specifications](#architecture-specifications) • [Feature Matrix](#feature-comparison-matrix) • [CLI Reference](#cli-reference) • [Python API](#python-api-reference) • [Verification Suite](#verification-suite) • [License](#license-and-attribution)
+[Overview](#system-overview) • [Supported Languages](#supported-languages-scripts--syntaxes) • [Architecture Flows](#system-architecture-flows) • [Technical Specifications](#architecture-specifications) • [Feature Matrix](#feature-comparison-matrix) • [37-Class Taxonomy](#37-class-layout-taxonomy-reference) • [CLI Reference](#cli-reference) • [Python API](#python-api-reference) • [Verification Suite](#verification-suite) • [License](#license-and-attribution)
 
 ---
 
@@ -30,6 +30,95 @@ ANANTA OCR unifies two document understanding paradigms into a single engine:
 1. **Ananta VLM Engine (`vlm`)**: A multi-page Vision-Language Model engineered for ultra-long documents (100+ pages). Utilizes dual-backbone visual compression (SAM-ViT-B + CLIP-L) to compress standard $1024 \times 1024$ pages into 273 visual tokens (16x spatial downsampling). Employs Sparse Reference Sliding Window Attention (SR-SWA / DASH) with 1.5-entmax routing to ensure strictly bounded $O(1)$ decoding memory and latency per step over a DeepSeek-V2 Mixture-of-Experts (MoE) decoder.
 2. **Ananta Block Engine (`block`)**: A high-precision two-stage pipeline. Stage 1 employs AnantaDocLayout (PP-DocLayoutV3 RT-DETR, 33M parameters) to detect a 37-class document taxonomy with an antisymmetric reading-order head. Stage 2 executes AnantaBlockOCR (Qwen3.5-0.8B VLM) with a 262,144-token multilingual vocabulary covering all 22 official Indian languages and English, utilizing specialized prompts for prose, display equations, and merged HTML tables.
 3. **Ananta Hybrid Engine (`hybrid`)**: Combines AnantaDocLayout topological segmentation with dynamic multi-engine routing, allocating complex visual regions to AnantaBlockOCR while preserving global document coherence through Ananta VLM.
+
+---
+
+## Supported Languages, Scripts & Syntaxes
+
+ANANTA OCR provides comprehensive document recognition across all 22 official scheduled Indian languages, English, global languages, and specialized scientific/technical notation systems. Powered by a 262,144-token multilingual vocabulary and hybrid vision backbones, the model natively transcribes complex conjunct consonants, matras, Perso-Arabic ligatures, mixed-script code-switching, and mathematical environments without character truncation or unk degradation.
+
+### 1. The 22 Scheduled Official Languages of India
+
+ANANTA OCR natively supports every language recognized under the Eighth Schedule of the Constitution of India:
+
+| # | Language | ISO 639-1 / 639-3 | Script | Language Family | Unicode Range | Native Numeral System |
+| :- | :--- | :--- | :--- | :--- | :--- | :--- |
+| 1 | Assamese | `as` / `asm` | Eastern Nagari (Assamese) | Indo-Aryan | `U+0980` - `U+09FF` | `০ ১ ২ ৩ ৪ ৫ ৬ ৭ ৮ ৯` |
+| 2 | Bengali | `bn` / `ben` | Bengali | Indo-Aryan | `U+0980` - `U+09FF` | `০ ১ ২ ৩ ৪ ৫ ৬ ৭ ৮ ৯` |
+| 3 | Bodo | `brx` | Devanagari | Sino-Tibetan | `U+0900` - `U+097F` | `० १ २ ३ ४ ५ ६ ७ ८ ९` |
+| 4 | Dogri | `doi` | Devanagari | Indo-Aryan | `U+0900` - `U+097F` | `० १ २ ३ ४ ५ ६ ७ ८ ९` |
+| 5 | Gujarati | `gu` / `guj` | Gujarati | Indo-Aryan | `U+0A80` - `U+0AFF` | `૦ ૧ ૨ ૩ ૪ ૫ ૬ ૭ ૮ ૯` |
+| 6 | Hindi | `hi` / `hin` | Devanagari | Indo-Aryan | `U+0900` - `U+097F` | `० १ २ ३ ४ ५ ६ ७ ८ ९` |
+| 7 | Kannada | `kn` / `kan` | Kannada | Dravidian | `U+0C80` - `U+0CFF` | `೦ ೧ ೨ ೩ ೪ ೫ ೬ ೭ ೮ ೯` |
+| 8 | Kashmiri | `ks` / `kas` | Perso-Arabic (Nastaliq) / Devanagari | Indo-Aryan | `U+0600` - `U+06FF` / `U+0900` - `U+097F` | `۰ ۱ ۲ ۳ ۴ ۵ ۶ ۷ ۸ ۹` / `०-९` |
+| 9 | Konkani | `kok` | Devanagari / Latin / Kannada | Indo-Aryan | `U+0900` - `U+097F` / `U+0020` - `U+007F` | `० १ २ ३ ४ ५ ६ ७ ८ ९` / `0-9` |
+| 10 | Maithili | `mai` | Devanagari / Tirhuta | Indo-Aryan | `U+0900` - `U+097F` / `U+11480` - `U+114DF` | `० १ २ ३ ४ ५ ६ ७ ८ ९` |
+| 11 | Malayalam | `ml` / `mal` | Malayalam | Dravidian | `U+0D00` - `U+0D7F` | `൦ ൧ ൨ ൩ ൪ ൫ ൬ ൭ ൮ ൯` |
+| 12 | Manipuri (Meitei) | `mni` | Meetei Mayek / Eastern Nagari | Sino-Tibetan | `U+ABC0` - `U+ABFF` / `U+0980` - `U+09FF` | `꯰ ꯱ ꯲ ꯳ ꯴ ꯵ ꯶ ꯷ ꯸ ꯹` |
+| 13 | Marathi | `mr` / `mar` | Devanagari (Balbodh) | Indo-Aryan | `U+0900` - `U+097F` | `० १ २ ३ ४ ५ ६ ७ ८ ९` |
+| 14 | Nepali | `ne` / `nep` | Devanagari | Indo-Aryan | `U+0900` - `U+097F` | `० १ २ ३ ४ ५ ६ ७ ८ ९` |
+| 15 | Odia | `or` / `ori` | Odia | Indo-Aryan | `U+0B00` - `U+0B7F` | `୦ ୧ ୨ ୩ ୪ ୫ ୬ ୭ ୮ ୯` |
+| 16 | Punjabi | `pa` / `pan` | Gurmukhi | Indo-Aryan | `U+0A00` - `U+0A7F` | `੦ ੧ ੨ ੩ ੪ ੫ ੬ ੭ ੮ ੯` |
+| 17 | Sanskrit | `sa` / `san` | Devanagari (Classical & Vedic Accents) | Indo-Aryan | `U+0900` - `U+097F`, `U+1CD0` - `U+1CFF` | `० १ २ ३ ४ ५ ६ ७ ८ ९` |
+| 18 | Santali | `sat` | Ol Chiki | Austroasiatic | `U+1C50` - `U+1C7F` | `᱐ ᱑ ᱒ ᱓ ᱔ ᱕ ᱖ ᱗ ᱘ ᱙` |
+| 19 | Sindhi | `sd` / `snd` | Perso-Arabic / Devanagari | Indo-Aryan | `U+0600` - `U+06FF` / `U+0900` - `U+097F` | `۰ ۱ ۲ ۳ ۴ ۵ ۶ ۷ ۸ ۹` / `०-९` |
+| 20 | Tamil | `ta` / `tam` | Tamil | Dravidian | `U+0B80` - `U+0BFF` | `௧ ௨ ௩ ௪ ௫ ௬ ௭ ௮ ௯ ௰` |
+| 21 | Telugu | `te` / `tel` | Telugu | Dravidian | `U+0C00` - `U+0C7F` | `౦ ౧ ౨ ౩ ౪ ౫ ౬ ౭ ౮ ౯` |
+| 22 | Urdu | `ur` / `urd` | Perso-Arabic (Nastaliq & Naskh) | Indo-Aryan | `U+0600` - `U+06FF`, `U+FB50` - `U+FDFF` | `۰ ۱ ۲ ۳ ۴ ۵ ۶ ۷ ۸ ۹` |
+
+### 2. Global & International Languages
+
+| Language | Code | Script | Typical Application & Document Domains |
+| :--- | :--- | :--- | :--- |
+| English | `en` | Latin | International research publications, legal contracts, business filings, software manuals |
+| Chinese (Simplified & Traditional) | `zh` / `cmn` | CJK Unified Ideographs (`U+4E00` - `U+9FFF`) | Technical literature, trade documentations, multi-page regulatory forms |
+| Western European Languages | `es`, `fr`, `de`, `pt`, `it` | Latin (with extended diacritics) | Academic articles, international reports, multi-lingual forms |
+
+### 3. Mixed-Script Code-Switching
+
+Indian educational, governmental, judicial, and media documents frequently interleave multiple scripts within a single line or paragraph. ANANTA OCR provides seamless transcription for:
+
+- **Hinglish & Vernacular-English Hybrids**: Hindi-English, Bengali-English, Tamil-English, Telugu-English mixtures common in school textbooks, entrance examinations (CBSE, JEE, NEET, UPSC), and judicial pleadings.
+- **Bi-Scriptual Government Gazettes**: Bilingual official notices with parallel or interspersed English and vernacular text blocks.
+- **Latin Technical Terms in Vernacular Prose**: Preserves English chemical symbols, algebraic variables, medical terminology, and URLs embedded in Indic sentences without phonological distortion.
+
+### 4. Mathematical, Scientific & Technical Syntaxes
+
+ANANTA OCR transcribes domain-specific notations into machine-readable standards:
+
+| Syntax Domain | Target Format | Representation & Capabilities |
+| :--- | :--- | :--- |
+| Inline Mathematics | LaTeX (`$...$`) | Embedded algebraic variables, Greek symbols (`\alpha`, `\beta`, `\theta`), superscripts, subscripts, limits |
+| Display Mathematics | LaTeX (`$$...$$`, `align`, `gather`) | Multi-line derivations, fractions (`\frac`), radicals (`\sqrt`), integral/summation calculus, linear algebra matrices |
+| Indic Math Safeguard | LaTeX `\text{...}` Wrappers | Automatic post-processing wraps any Unicode Indic glyphs inside mathematical spans in `\text{...}`, eliminating KaTeX/MathJax compilation breakage |
+| Complex Tables | HTML `<table>` or GFM Markdown | Full preservation of multi-column spans (`colspan`), multi-row spans (`rowspan`), multi-level header hierarchies, and empty cell alignments |
+| Source Code & Algorithms | Markdown Code Blocks (````...````) | Indentation-accurate transcription of Python, C/C++, Java, SQL, JSON, YAML, pseudocode, and terminal listings |
+| Chemical Formulations | LaTeX / Text | Molecular formulas, state indicators (aq, s, g), reaction arrows, bond representations |
+| Examination Layouts | Standardized Markdown | Question stems, answer option grids `(A), (B), (C), (D)`, solved problem steps, multi-part exercise hierarchies |
+
+### 5. Multi-System Numeral Recognition
+
+ANANTA OCR transcribes both international Arabic numerals and native regional numeral scripts:
+
+- **International Standard**: `0, 1, 2, 3, 4, 5, 6, 7, 8, 9`
+- **Devanagari (Hindi, Marathi, Sanskrit, Nepali)**: `०, १, २, ३, ४, ५, ६, ७, ८, ९`
+- **Bengali / Assamese**: `০, ১, ২, ৩, ৪, ৫, ৬, ৭, ৮, ৯`
+- **Gurmukhi (Punjabi)**: `੦, ੧, ੨, ੩, ੪, ੫, ੬, ੭, ੮, ੯`
+- **Gujarati**: `૦, ૧, ૨, ૩, ૪, ૫, ૬, ૭, ૮, ૯`
+- **Odia**: `୦, ୧, ୨, ୩, ୪, ୫, ୬, ୭, ୮, ୯`
+- **Tamil**: `௧, ௨, ௩, ௪, ௫, ௬, ௭, ௮, ௯, ௰`
+- **Telugu**: `౦, ౧, ౨, ౩, ౪, ౫, ౬, ౭, ౮, ౯`
+- **Kannada**: `೦, ೧, ೨, ೩, ೪, ೫, ೬, ೭, ೮, ೯`
+- **Malayalam**: `൦, ൧, ൨, ൩, ൪, ൫, ൬, ൭, ൮, ൯`
+- **Perso-Arabic (Urdu, Sindhi, Kashmiri)**: `۰, ۱, ۲, ۳, ۴, ۵, ۶, ۷, ۸, ۹`
+- **Ol Chiki (Santali)**: `᱐, ᱑, ᱒, ᱓, ᱔, ᱕, ᱖, ᱗, ᱘, ᱙`
+
+### 6. Architectural Tokenizer Specifications
+
+- **Vocabulary Dimension**: 262,144 subword units.
+- **Coverage**: Byte-Pair Encoding (BPE) trained across massive multilingual and multi-script corpora.
+- **Conjunct Consonant Preservation**: Native multi-character subwords for complex Indic conjuncts (samyuktaksharas like क्ष, त्र, ज्ञ, श्र, द्ध, ष्ट्र) preventing excessive token fragmentation.
+- **Zero-Width Joiner Support**: Proper boundary encoding for Zero-Width Joiner (`U+200D`) and Zero-Width Non-Joiner (`U+200C`) required for correct Malayalam, Bengali, and Perso-Arabic rendering.
 
 ---
 
