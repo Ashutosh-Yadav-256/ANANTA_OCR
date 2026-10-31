@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ANANTA OCR - Architecture Visualizer</title>
+  <style>
+    :root {
+      --bg: #0b1120;
+      --card-bg: #1e293b;
+      --card-hover: #334155;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --border: #334155;
+      --accent: #38bdf8;
+      --accent-glow: rgba(56, 189, 248, 0.25);
+      --success: #34d399;
+      --purple: #a855f7;
+      --orange: #fb923c;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      padding: 1.25rem 2rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(11, 17, 32, 0.95);
+      backdrop-filter: blur(8px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .brand { display: flex; align-items: center; gap: 0.75rem; }
+    .badge {
+      background: #0284c7;
+      color: white;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.25rem 0.6rem;
+      border-radius: 9999px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .container {
+      display: grid;
+      grid-template-columns: 1fr 420px;
+      flex: 1;
+      height: calc(100vh - 75px);
+    }
+    .canvas-pane {
+      padding: 1.5rem 2rem;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+    .engine-switcher {
+      display: flex;
+      gap: 0.5rem;
+      background: var(--card-bg);
+      padding: 0.35rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      width: fit-content;
+    }
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 0.5rem 1rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+    }
+    .tab-btn.active {
+      background: #0284c7;
+      color: #fff;
+    }
+    .diagram-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3);
+    }
+    .diagram-card h3 {
+      font-size: 1.15rem;
+      margin-bottom: 0.5rem;
+      color: var(--accent);
+      font-weight: 600;
+    }
+    .inspector-pane {
+      border-left: 1px solid var(--border);
+      background: rgba(15, 23, 42, 0.75);
+      padding: 1.5rem;
+      overflow-y: auto;
+    }
+    .inspector-title { font-size: 1.05rem; font-weight: 600; margin-bottom: 1rem; color: #fff; }
+    .node {
+      background: #0f172a;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.9rem 1rem;
+      margin-bottom: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .node:hover, .node.active {
+      border-color: var(--accent);
+      box-shadow: 0 0 15px var(--accent-glow);
+      transform: translateY(-2px);
+    }
+    .node-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem; }
+    .node-name { font-weight: 600; font-size: 0.92rem; }
+    .node-tag { font-size: 0.68rem; padding: 0.15rem 0.4rem; border-radius: 4px; font-weight: 600; }
+    .tag-vision { background: #065f46; color: #6ee7b7; }
+    .tag-moe { background: #581c87; color: #d8b4fe; }
+    .tag-attn { background: #1e3a8a; color: #93c5fd; }
+    .tag-kernel { background: #831843; color: #f472b6; }
+    .tag-det { background: #7c2d12; color: #fdba74; }
+    .tag-ocr { background: #14532d; color: #86efac; }
+    .node-desc { font-size: 0.8rem; color: var(--text-muted); line-height: 1.35; }
+    .flow-arrow { text-align: center; color: var(--accent); font-size: 0.8rem; font-weight: 600; margin: 0.25rem 0; }
+    .spec-table { width: 100%; border-collapse: collapse; margin-top: 1rem; font-size: 0.82rem; }
+    .spec-table td { padding: 0.45rem 0; border-bottom: 1px solid var(--border); }
+    .spec-table td:first-child { color: var(--text-muted); width: 45%; }
+    .spec-table td:last-child { font-weight: 600; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <h2>ANANTA OCR</h2>
+      <span class="badge">Architecture Visualizer</span>
+    </div>
+    <div style="font-size: 0.85rem; color: var(--text-muted);">
+      Interactive Technical Architecture and Design Specifications
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="canvas-pane">
+      <div class="engine-switcher">
+        <button class="tab-btn active" onclick="switchEngine('vlm')">Ananta VLM Engine</button>
+        <button class="tab-btn" onclick="switchEngine('block')">Ananta Block Engine</button>
+        <button class="tab-btn" onclick="switchEngine('hybrid')">Ananta Hybrid Engine</button>
+      </div>
+
+      <div id="vlm-view" class="diagram-card">
+        <h3>Ananta VLM Engine (Unlimited-Horizon Multi-Page)</h3>
+        <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.25rem;">
+          End-to-end pipeline compressing 100+ document pages into 273 visual tokens per page with constant O(1) DASH attention.
+        </p>
+
+        <div style="display: flex; flex-direction: column;">
+          <div class="node active" onclick="inspect('deepencoder')">
+            <div class="node-header">
+              <span class="node-name">1. DeepEncoder (Dual Visual Backbone)</span>
+              <span class="node-tag tag-vision">16x Compression</span>
+            </div>
+            <div class="node-desc">
+              Cascades SAM-ViT-B (stroke sharpness, boundaries, layout) and CLIP-L/14@224 (semantic character features).
+            </div>
+          </div>
+
+          <div class="flow-arrow">Projector Downsampling (2048 to 1280)</div>
+
+          <div class="node" onclick="inspect('projector')">
+            <div class="node-header">
+              <span class="node-name">2. Linear Projector Layer</span>
+              <span class="node-tag tag-vision">MlpProjector</span>
+            </div>
+            <div class="node-desc">
+              Maps concatenated embeddings down to 1280 dimensions, emitting exactly 273 tokens per 1024x1024 page.
+            </div>
+          </div>
+
+          <div class="flow-arrow">Token Embedding Stream</div>
+
+          <div class="node" onclick="inspect('moe')">
+            <div class="node-header">
+              <span class="node-name">3. DeepSeek-V2 MoE Language Decoder</span>
+              <span class="node-tag tag-moe">12 Layers / 64 Experts</span>
+            </div>
+            <div class="node-desc">
+              Transformer layers with 64 routed + 2 shared experts. Dynamic Top-6 routing per token (~500M active parameters).
+            </div>
+          </div>
+
+          <div class="flow-arrow">Hierarchical Sparse Attention</div>
+
+          <div class="node" onclick="inspect('dash')">
+            <div class="node-header">
+              <span class="node-name">4. SR-SWA DASH Sparse Attention</span>
+              <span class="node-tag tag-attn">Bounded O(1) Memory</span>
+            </div>
+            <div class="node-desc">
+              1.5-entmax differentiable block routing over 32-token summaries. Selects Top-12 remote blocks with 128-token local window.
+            </div>
+          </div>
+
+          <div class="flow-arrow">Hardware Acceleration</div>
+
+          <div class="node" onclick="inspect('triton')">
+            <div class="node-header">
+              <span class="node-name">5. Fused Triton Attention Kernel</span>
+              <span class="node-tag tag-kernel">Custom GPU Kernel</span>
+            </div>
+            <div class="node-desc">
+              Fuses gather indexing, additive block bias, softmax, and matrix multiplication in a single GPU pass.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="block-view" class="diagram-card" style="display: none;">
+        <h3>Ananta Block Engine (Two-Stage Layout and Block OCR)</h3>
+        <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.25rem;">
+          High-precision 37-class layout analysis paired with specialized per-block transcription across 22 Indic languages and English.
+        </p>
+
+        <div style="display: flex; flex-direction: column;">
+          <div class="node" onclick="inspect('ppdoc')">
+            <div class="node-header">
+              <span class="node-name">1. AnantaDocLayout (PP-DocLayoutV3)</span>
+              <span class="node-tag tag-det">RT-DETR 33M</span>
+            </div>
+            <div class="node-desc">
+              Document layout detector predicting 37 fine-grained classes with normalized bounding coordinates [0, 1000].
+            </div>
+          </div>
+
+          <div class="flow-arrow">Pairwise Bilinear Projections</div>
+
+          <div class="node" onclick="inspect('reading_order')">
+            <div class="node-header">
+              <span class="node-name">2. Antisymmetric Reading-Order Head</span>
+              <span class="node-tag tag-det">Locality GCE</span>
+            </div>
+            <div class="node-desc">
+              Calculates pairwise precedence matrix S[i,j] and decodes topological reading sequence via voting sort.
+            </div>
+          </div>
+
+          <div class="flow-arrow">Geometry Deduplication and Area Clamping</div>
+
+          <div class="node" onclick="inspect('crops')">
+            <div class="node-header">
+              <span class="node-name">3. Geometry Deduplication and Crop Normalization</span>
+              <span class="node-tag tag-det">Area Clamp</span>
+            </div>
+            <div class="node-desc">
+              Suppresses nested equation boxes within paragraphs and scales crop area into [256^2, 1536^2] pixels.
+            </div>
+          </div>
+
+          <div class="flow-arrow">Specialized Prompt Dispatch</div>
+
+          <div class="node" onclick="inspect('block_ocr')">
+            <div class="node-header">
+              <span class="node-name">4. AnantaBlockOCR (Qwen3.5-0.8B VLM)</span>
+              <span class="node-tag tag-ocr">262k Vocab</span>
+            </div>
+            <div class="node-desc">
+              Transcribes crops with targeted prompts for Prose, LaTeX Equations, and HTML Tables (colspan/rowspan).
+            </div>
+          </div>
+
+          <div class="flow-arrow">Post-Processing</div>
+
+          <div class="node" onclick="inspect('math_repair')">
+            <div class="node-header">
+              <span class="node-name">5. LaTeX Math Repair and Dehyphenation</span>
+              <span class="node-tag tag-ocr">LaTeX Sanitizer</span>
+            </div>
+            <div class="node-desc">
+              Protects Unicode Indic text inside math mode with \text{...} and rejoins hyphenated words across line breaks.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="hybrid-view" class="diagram-card" style="display: none;">
+        <h3>Ananta Hybrid Engine (Unified Co-Execution)</h3>
+        <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.25rem;">
+          Combines structural layout segmentation with dynamic multi-engine dispatching for complex document portfolios.
+        </p>
+
+        <div style="display: flex; flex-direction: column;">
+          <div class="node" onclick="inspect('hybrid_seg')">
+            <div class="node-header">
+              <span class="node-name">1. Topological Layout Segmentation</span>
+              <span class="node-tag tag-det">Segmentation</span>
+            </div>
+            <div class="node-desc">
+              Decomposes document into structured spatial partitions with strict reading order sequence indexing.
+            </div>
+          </div>
+
+          <div class="flow-arrow">Dynamic Content-Aware Routing</div>
+
+          <div class="node" onclick="inspect('hybrid_dispatch')">
+            <div class="node-header">
+              <span class="node-name">2. Intelligent Block Dispatcher</span>
+              <span class="node-tag tag-moe">Dual Dispatch</span>
+            </div>
+            <div class="node-desc">
+              Routes formulas, tables, and Indic regional scripts to AnantaBlockOCR; passes global narrative to Ananta VLM.
+            </div>
+          </div>
+
+          <div class="flow-arrow">Document Assembly</div>
+
+          <div class="node" onclick="inspect('hybrid_merge')">
+            <div class="node-header">
+              <span class="node-name">3. Document Synthesis Engine</span>
+              <span class="node-tag tag-vision">Reconstruction</span>
+            </div>
+            <div class="node-desc">
+              Consolidates multi-modal outputs into a unified Markdown document with structured PageResult annotations.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="inspector-pane" id="inspector">
+      <div class="inspector-title">Component Inspector</div>
+      <div id="inspector-content">
+        Select a component node to view its design specifications.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const specs = {
+      deepencoder: {
+        title: "DeepEncoder (Dual Visual Backbone)",
+        desc: "Combines high-frequency edge layout features with deep semantic character representations.",
+        table: [
+          ["SAM Backbone", "SAM-ViT-B (12 layers, 12 heads, width 768)"],
+          ["CLIP Backbone", "CLIP-L/14@224 (24 layers, 16 heads, width 1024)"],
+          ["Input Resolution", "1024 x 1024 px"],
+          ["Spatial Downsampling", "16x compression factor"],
+          ["Token Allocation", "Exactly 273 visual tokens per page"],
+          ["Implementation", "deepencoder.py"]
+        ]
+      },
+      projector: {
+        title: "Linear Feature Projector",
+        desc: "Projects concatenated visual representations into the language decoder hidden space.",
+        table: [
+          ["Input Dimension", "2048 (768 SAM + 1280 CLIP)"],
+          ["Output Dimension", "1280 (Decoder hidden size)"],
+          ["Projector Type", "Linear Multi-Layer Projection (MlpProjector)"],
+          ["Activation", "SiLU (Swish)"],
+          ["Implementation", "deepencoder.py:MlpProjector"]
+        ]
+      },
+      moe: {
+        title: "DeepSeek-V2 MoE Language Decoder",
+        desc: "Mixture-of-Experts decoder maximizing parameter capacity while bounding compute.",
+        table: [
+          ["Transformer Layers", "12 Decoder Layers"],
+          ["Hidden Size", "1280 (intermediate 6848)"],
+          ["Routed Experts", "64 experts"],
+          ["Shared Experts", "2 shared experts"],
+          ["Active Experts/Token", "Top-6 routed experts (Greedy)"],
+          ["Active Parameters", "500 Million (3 Billion total)"],
+          ["Context Length", "131,072 tokens with YaRN RoPE"],
+          ["Implementation", "modeling_anantaocr.py, modeling_deepseekv2.py"]
+        ]
+      },
+      dash: {
+        title: "SR-SWA DASH Sparse Attention",
+        desc: "Differentiable sparse attention resolving quadratic KV-cache memory explosion over 100+ pages.",
+        table: [
+          ["Block Size", "32 tokens per block summary"],
+          ["Routing Function", "1.5-entmax (closed-form, differentiable)"],
+          ["Remote Budget", "12 remote reference blocks"],
+          ["Local Window", "128 contiguous causal tokens"],
+          ["Memory Complexity", "Strictly O(1) constant per decoding step"],
+          ["Implementation", "dash_attention.py:DashAttention"]
+        ]
+      },
+      triton: {
+        title: "Fused Gather-Attention Triton Kernel",
+        desc: "Hardware-fused GPU kernel executing sparse gather, additive block bias, softmax, and matrix multiplication.",
+        table: [
+          ["Source File", "sparse_gather_e2e_triton.py"],
+          ["Execution Grid", "[T, ceil(V/BV), B*H]"],
+          ["Block Parameters", "BK=128, BV=128, BS=32"],
+          ["Numeric Precision", "bfloat16 / float32 accumulator"],
+          ["Acceleration", "3.8x faster than eager PyTorch scatter-gather"]
+        ]
+      },
+      ppdoc: {
+        title: "AnantaDocLayout (PP-DocLayoutV3 RT-DETR)",
+        desc: "Document layout analysis detector identifying 37 fine-grained classes across educational and publication domains.",
+        table: [
+          ["Backbone", "RT-DETR (33 Million parameters)"],
+          ["Taxonomy", "37 classes (Paragraph, Question, Answer, Table, Equation, etc.)"],
+          ["Input Resolution", "1024 x 1024 px"],
+          ["Confidence Floor", "0.50 threshold"],
+          ["Implementation", "ananta_engine/layout/infer.py"]
+        ]
+      },
+      reading_order: {
+        title: "Antisymmetric Reading-Order Head",
+        desc: "Pairwise precedence head with Locality Generalized Cross-Entropy recovering clean reading order.",
+        table: [
+          ["Formulation", "Antisymmetric Bilinear S[i,j] = -S[j,i]"],
+          ["Loss Metric", "Locality-Weighted GCE (tau=3.0, q=0.7)"],
+          ["Sorting Method", "Voting sequence decode over sigmoid matrix"],
+          ["Implementation", "ananta_engine/layout/order_loss.py"]
+        ]
+      },
+      crops: {
+        title: "Geometry Deduplication and Area Clamping",
+        desc: "Filters duplicate overlapping boxes and normalizes crop resolution to optimize token economy.",
+        table: [
+          ["Containment Threshold", "0.90 containment deduplication"],
+          ["Equation Absorption", "0.70 nested equation threshold"],
+          ["Minimum Area", "256 x 256 px floor"],
+          ["Maximum Area", "1536 x 1536 px ceiling"],
+          ["Implementation", "ananta_engine/engine/blocks.py, crops.py"]
+        ]
+      },
+      block_ocr: {
+        title: "AnantaBlockOCR (Qwen3.5-0.8B VLM)",
+        desc: "Per-block vision-language recognizer specialized for complex Indian scripts, formulas, and tabular data.",
+        table: [
+          ["VLM Backbone", "Qwen3.5-0.8B"],
+          ["Vocabulary", "262,144 tokens (Sarvam-30B lineage)"],
+          ["Languages", "All 22 Official Indian Languages and English"],
+          ["Prompts", "Specialized for Prose, LaTeX Equation, and HTML Table"],
+          ["EOS Token", "262146 (<|im_end|>) enforced"],
+          ["Implementation", "ananta_engine/engine/recognizer.py"]
+        ]
+      },
+      math_repair: {
+        title: "LaTeX Math Sanitization Engine",
+        desc: "Automated LaTeX post-processor preventing compilation errors in scientific and mathematical expressions.",
+        table: [
+          ["Unicode Protection", "Wraps Indic script codepoints in \\text{...}"],
+          ["Newline Syntax", "Replaces bare newlines with \\\\ in display math"],
+          ["Dehyphenation", "Merges words split across line breaks"],
+          ["Implementation", "ananta_engine/engine/reconstruct.py"]
+        ]
+      },
+      hybrid_seg: {
+        title: "Topological Layout Segmentation",
+        desc: "Partitions document into hierarchical semantic units with verified sequence indexing.",
+        table: [
+          ["Segmentation Model", "AnantaDocLayout"],
+          ["Ordering", "Antisymmetric Topological Sort"],
+          ["Output Schema", "Structured PageResult JSON"],
+          ["Implementation", "unified_pipeline.py"]
+        ]
+      },
+      hybrid_dispatch: {
+        title: "Intelligent Block Dispatcher",
+        desc: "Content-aware dispatcher routing image crops to specialized models based on visual complexity.",
+        table: [
+          ["Prose & Multi-Page", "Ananta VLM Engine"],
+          ["Tables & Formulas", "AnantaBlockOCR"],
+          ["Indic Scripts", "AnantaBlockOCR (262k Vocab)"],
+          ["Implementation", "unified_pipeline.py:process_hybrid"]
+        ]
+      },
+      hybrid_merge: {
+        title: "Document Synthesis Engine",
+        desc: "Harmonizes multi-engine outputs into a single coherent document with coordinate grounding.",
+        table: [
+          ["Output Format", "GitHub Flavored Markdown and Structured JSON"],
+          ["Coordinate Tags", "[x0, y0, x1, y1] clamped to page"],
+          ["Implementation", "unified_pipeline.py"]
+        ]
+      }
+    };
+
+    function switchEngine(engine) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+
+      document.getElementById('vlm-view').style.display = (engine === 'vlm') ? 'block' : 'none';
+      document.getElementById('block-view').style.display = (engine === 'block') ? 'block' : 'none';
+      document.getElementById('hybrid-view').style.display = (engine === 'hybrid') ? 'block' : 'none';
+
+      if (engine === 'vlm') inspect('deepencoder');
+      if (engine === 'block') inspect('ppdoc');
+      if (engine === 'hybrid') inspect('hybrid_seg');
+    }
+
+    function inspect(key) {
+      document.querySelectorAll('.node').forEach(el => el.classList.remove('active'));
+      if (event && event.currentTarget) {
+        event.currentTarget.classList.add('active');
+      }
+      const item = specs[key];
+      if (!item) return;
+
+      let html = `<h4 style="color: var(--accent); margin-bottom: 0.5rem; font-size: 1.05rem;">${item.title}</h4>`;
+      html += `<p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.4; margin-bottom: 1rem;">${item.desc}</p>`;
+      html += `<table class="spec-table">`;
+      for (const [k, v] of item.table) {
+        html += `<tr><td>${k}</td><td>${v}</td></tr>`;
+      }
+      html += `</table>`;
+      document.getElementById('inspector-content').innerHTML = html;
+    }
+
+    inspect('deepencoder');
+  </script>
+</body>
+</html>
