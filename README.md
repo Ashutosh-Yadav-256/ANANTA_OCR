@@ -10,10 +10,11 @@
 [![Architecture: MoE + 2-Stage VLM](https://img.shields.io/badge/Architecture-MoE%20%2B%202--Stage%20VLM-purple.svg)](#architecture-specifications)
 [![Attention: SR-SWA](https://img.shields.io/badge/Attention-SR--SWA%20%2F%20DASH-green.svg)](#subsystem-1-ananta-vlm-engine)
 [![Languages: 22+ Indic & English](https://img.shields.io/badge/Languages-22%2B%20Indic%20%2B%20English-orange.svg)](#supported-languages-scripts--syntaxes)
+[![Research Paper](https://img.shields.io/badge/Research_Paper-Springer_Format-8A2BE2.svg)](docs/paper.md)
 
 A unified visual document parsing architecture combining unlimited-horizon multi-page document understanding across 100+ pages with fine-grained 37-class layout analysis and multilingual block recognition.
 
-[Overview](#system-overview) • [Supported Languages](#supported-languages-scripts--syntaxes) • [Architecture Flows](#system-architecture-flows) • [Technical Specifications](#architecture-specifications) • [Feature Matrix](#feature-comparison-matrix) • [37-Class Taxonomy](#37-class-layout-taxonomy-reference) • [CLI Reference](#cli-reference) • [Python API](#python-api-reference) • [Verification Suite](#verification-suite) • [License](#license-and-attribution)
+[Research Paper](docs/paper.md) • [Overview](#system-overview) • [Supported Languages](#supported-languages-scripts--syntaxes) • [Architecture Flows](#system-architecture-flows) • [Technical Specifications](#architecture-specifications) • [Feature Matrix](#feature-comparison-matrix) • [37-Class Taxonomy](#37-class-layout-taxonomy-reference) • [CLI Reference](#cli-reference) • [Python API](#python-api-reference) • [Verification Suite](#verification-suite) • [License](#license-and-attribution)
 
 ---
 
