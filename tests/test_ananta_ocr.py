@@ -64,7 +64,11 @@ except ImportError:
         CLASSES,
         NUM_CLASSES,
     )
-    from unified_pipeline import UnifiedOCR
+    from unified_pipeline import (
+        UnifiedOCR,
+        RegionResult,
+        classify_hybrid_block,
+    )
     from ananta_engine.templates.contract import (
         prompt_for,
         map_label,

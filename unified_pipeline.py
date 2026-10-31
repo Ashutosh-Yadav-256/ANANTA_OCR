@@ -28,18 +28,32 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Literal
 
-from .ananta_engine import (
-    Block,
-    PageResult,
-    AnantaOCR,
-    AnantaDocLayout,
-    AnantaBlockOCR,
-    TableFormat,
-    LayoutConfig,
-    CropConfig,
-    DedupConfig,
-    RecognizerConfig,
-)
+try:
+    from .ananta_engine import (
+        Block,
+        PageResult,
+        AnantaOCR,
+        AnantaDocLayout,
+        AnantaBlockOCR,
+        TableFormat,
+        LayoutConfig,
+        CropConfig,
+        DedupConfig,
+        RecognizerConfig,
+    )
+except (ImportError, ValueError):
+    from ananta_engine import (
+        Block,
+        PageResult,
+        AnantaOCR,
+        AnantaDocLayout,
+        AnantaBlockOCR,
+        TableFormat,
+        LayoutConfig,
+        CropConfig,
+        DedupConfig,
+        RecognizerConfig,
+    )
 
 HYBRID_BLOCK_CLASSES = {
     "Table",
@@ -431,7 +445,10 @@ class UnifiedOCR:
             region_results.sort(key=lambda r: r.order)
             ordered_blocks = [r.to_block() for r in region_results]
 
-            from .ananta_engine.engine.reconstruct import reconstruct
+            try:
+                from .ananta_engine.engine.reconstruct import reconstruct
+            except (ImportError, ValueError):
+                from ananta_engine.engine.reconstruct import reconstruct
             final_markdown = reconstruct(ordered_blocks)
 
             count_block = sum(1 for r in region_results if r.engine == "block")

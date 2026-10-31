@@ -6,32 +6,60 @@ Combines:
   3. Ananta Hybrid Engine: Reading-order guided layout segmentation + intelligent multi-engine transcription.
 """
 
-from .ananta_engine import (
-    Block,
-    PageResult,
-    LayoutConfig,
-    CropConfig,
-    DedupConfig,
-    RecognizerConfig,
-    TableFormat,
-    AnantaDocLayout,
-    AnantaBlockOCR,
-    AnantaOCR,
-    AnantaClient,
-    HfRecognizer,
-    VllmRecognizer,
-    CLASSES,
-    LABEL2ID,
-    ID2LABEL,
-    NUM_CLASSES,
-)
-from .unified_pipeline import (
-    UnifiedOCR,
-    RegionResult,
-    classify_hybrid_block,
-    HYBRID_BLOCK_CLASSES,
-    HYBRID_NARRATIVE_CLASSES,
-)
+try:
+    from .ananta_engine import (
+        Block,
+        PageResult,
+        LayoutConfig,
+        CropConfig,
+        DedupConfig,
+        RecognizerConfig,
+        TableFormat,
+        AnantaDocLayout,
+        AnantaBlockOCR,
+        AnantaOCR,
+        AnantaClient,
+        HfRecognizer,
+        VllmRecognizer,
+        CLASSES,
+        LABEL2ID,
+        ID2LABEL,
+        NUM_CLASSES,
+    )
+    from .unified_pipeline import (
+        UnifiedOCR,
+        RegionResult,
+        classify_hybrid_block,
+        HYBRID_BLOCK_CLASSES,
+        HYBRID_NARRATIVE_CLASSES,
+    )
+except (ImportError, ValueError):
+    from ananta_engine import (
+        Block,
+        PageResult,
+        LayoutConfig,
+        CropConfig,
+        DedupConfig,
+        RecognizerConfig,
+        TableFormat,
+        AnantaDocLayout,
+        AnantaBlockOCR,
+        AnantaOCR,
+        AnantaClient,
+        HfRecognizer,
+        VllmRecognizer,
+        CLASSES,
+        LABEL2ID,
+        ID2LABEL,
+        NUM_CLASSES,
+    )
+    from unified_pipeline import (
+        UnifiedOCR,
+        RegionResult,
+        classify_hybrid_block,
+        HYBRID_BLOCK_CLASSES,
+        HYBRID_NARRATIVE_CLASSES,
+    )
 
 __all__ = [
     "AnantaOCR",
