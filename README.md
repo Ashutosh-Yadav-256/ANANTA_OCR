@@ -11,6 +11,7 @@
 [![Attention: SR-SWA](https://img.shields.io/badge/Attention-SR--SWA%20%2F%20DASH-green.svg)](#subsystem-1-ananta-vlm-engine)
 [![Languages: 22+ Indic & English](https://img.shields.io/badge/Languages-22%2B%20Indic%20%2B%20English-orange.svg)](#supported-languages-scripts--syntaxes)
 [![Research Paper](https://img.shields.io/badge/Research_Paper-Springer_Format-8A2BE2.svg)](docs/paper.md)
+[![Download PDF](https://img.shields.io/badge/Download_Paper-PDF-red.svg)](docs/ANANTA_OCR_Research_Paper.pdf)
 
 A unified visual document parsing architecture combining unlimited-horizon multi-page document understanding across 100+ pages with fine-grained 37-class layout analysis and multilingual block recognition.
 

@@ -3,13 +3,13 @@
 ## Front Matter
 
 ### Author Information
-- **Ashutosh Yadav**  
+- **ASHUTOSH YADAV**  
   Department of Computer Science and Engineering  
-  Email: ashutoshyadav2102004@gmail.com  
+  Email: ASHUTOSH4TECH@GMAIL.COM  
 - **ANANTA OCR Research Consortium**  
   Open-Source Document Intelligence Initiative  
 
-**Corresponding Author**: Ashutosh Yadav (ashutoshyadav2102004@gmail.com)
+**Corresponding Author**: ASHUTOSH YADAV (ASHUTOSH4TECH@GMAIL.COM)
 
 ---
 
@@ -1340,7 +1340,7 @@ All source code, Triton kernels, model architectures, and automated testing suit
 The research complies with established ethical standards for open-source software and machine learning research. No personally identifiable private information was gathered or processed.
 
 ### Author Contributions
-- **Ashutosh Yadav**: Conceptualization, architecture design, Triton kernel implementation, reading-order loss formulation, hybrid pipeline engineering, experimental evaluation, and manuscript authorship.
+- **ASHUTOSH YADAV**: Conceptualization, architecture design, Triton kernel implementation, reading-order loss formulation, hybrid pipeline engineering, experimental evaluation, and manuscript authorship.
 - **ANANTA OCR Consortium**: Model testing, Indic language verification, dataset preparation, and continuous integration maintenance.
 
 ---
