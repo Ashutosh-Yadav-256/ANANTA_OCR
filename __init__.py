@@ -25,7 +25,12 @@ from .ananta_engine import (
     ID2LABEL,
     NUM_CLASSES,
 )
-from .unified_pipeline import UnifiedOCR
+from .unified_pipeline import (
+    UnifiedOCR,
+    classify_hybrid_block,
+    HYBRID_BLOCK_CLASSES,
+    HYBRID_NARRATIVE_CLASSES,
+)
 
 __all__ = [
     "AnantaOCR",
@@ -33,6 +38,9 @@ __all__ = [
     "AnantaBlockOCR",
     "AnantaClient",
     "UnifiedOCR",
+    "classify_hybrid_block",
+    "HYBRID_BLOCK_CLASSES",
+    "HYBRID_NARRATIVE_CLASSES",
     "Block",
     "PageResult",
     "LayoutConfig",

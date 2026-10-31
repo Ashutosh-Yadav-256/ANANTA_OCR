@@ -737,11 +737,11 @@ class AnantaOCRModel(DeepseekV2Model):
                     if _packed_mm:
                         _packed_feats.append(images_in_this_batch)
                     else:
-                        inputs_embeds[idx].masked_scatter_(images_seq_mask[idx].unsqueeze(-1).cuda(), images_in_this_batch)
+                        inputs_embeds[idx].masked_scatter_(images_seq_mask[idx].unsqueeze(-1).to(inputs_embeds.device), images_in_this_batch)
 
             if _packed_mm and _packed_feats:
                 _packed_feats = torch.cat(_packed_feats, dim=0)
-                inputs_embeds[0].masked_scatter_(images_seq_mask[0].unsqueeze(-1).cuda(), _packed_feats)
+                inputs_embeds[0].masked_scatter_(images_seq_mask[0].unsqueeze(-1).to(inputs_embeds.device), _packed_feats)
 
         _td_add("vision", _t_vis)
 

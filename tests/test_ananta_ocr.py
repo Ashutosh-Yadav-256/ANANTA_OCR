@@ -200,6 +200,38 @@ class TestAnantaPipeline(unittest.TestCase):
         self.assertEqual(len(reconstructed_page.blocks), 1)
         self.assertEqual(reconstructed_page.blocks[0].text, "Sample")
 
+    def test_hybrid_routing_classification(self):
+        try:
+            from ananta_ocr import classify_hybrid_block
+        except ImportError:
+            from unified_pipeline import classify_hybrid_block
+        self.assertEqual(classify_hybrid_block("Table"), "block")
+        self.assertEqual(classify_hybrid_block("Equation"), "block")
+        self.assertEqual(classify_hybrid_block("MCQ"), "block")
+        self.assertEqual(classify_hybrid_block("Code"), "block")
+        self.assertEqual(classify_hybrid_block("Paragraph"), "vlm")
+        self.assertEqual(classify_hybrid_block("Title"), "vlm")
+
+    def test_image_safety_limits(self):
+        try:
+            from ananta_ocr.ananta_engine.engine.offline import _open
+        except ImportError:
+            from ananta_engine.engine.offline import _open
+        import tempfile
+        from PIL import Image
+
+        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as f:
+            temp_path = f.name
+            img = Image.new("RGB", (200, 200), color="white")
+            img.save(temp_path)
+
+        with self.assertRaises(ValueError):
+            _open(temp_path, max_pixels=10000)
+
+        safe_img = _open(temp_path, max_pixels=50000)
+        self.assertEqual(safe_img.size, (200, 200))
+        Path(temp_path).unlink(missing_ok=True)
+
 
 if __name__ == "__main__":
     unittest.main()

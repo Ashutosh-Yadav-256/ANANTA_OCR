@@ -23,11 +23,29 @@ from .types import (
 from ..templates.contract import is_transcribed
 
 
-def _open(image_path: str):
+DEFAULT_MAX_IMAGE_PIXELS = int(os.environ.get("ANANTA_MAX_IMAGE_PIXELS", "100000000"))
+
+
+def _open(image_path: str, max_pixels: int | None = None):
     from PIL import Image
 
-    Image.MAX_IMAGE_PIXELS = None
-    return Image.open(image_path).convert("RGB")
+    limit = max_pixels if max_pixels is not None else DEFAULT_MAX_IMAGE_PIXELS
+    Image.MAX_IMAGE_PIXELS = limit
+    try:
+        img = Image.open(image_path)
+    except Image.DecompressionBombError as err:
+        raise ValueError(
+            f"Image exceeds safety limit of {limit} pixels: {err}. "
+            "Set ANANTA_MAX_IMAGE_PIXELS environment variable to adjust."
+        ) from err
+
+    w, h = img.size
+    if limit is not None and (w * h) > limit:
+        raise ValueError(
+            f"Image dimensions ({w}x{h} = {w * h} pixels) exceed safety limit of {limit} pixels. "
+            "Set ANANTA_MAX_IMAGE_PIXELS environment variable to adjust."
+        )
+    return img.convert("RGB")
 
 
 def _as_page(layout: PageResult | dict | str) -> PageResult:

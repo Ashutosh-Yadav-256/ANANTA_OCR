@@ -536,6 +536,7 @@ ANANTA_OCR/
 |-- config.json
 |-- tokenizer.json
 |-- requirements.txt
+|-- NOTICES.md
 \-- README.md
 ```
 
@@ -547,6 +548,7 @@ ANANTA OCR is distributed under open-source licenses:
 
 - **ANANTA OCR Core Engine & Triton Kernels**: Released under the **MIT License**. Copyright (c) 2026 AnantaOCR Contributors. Portions Copyright (c) 2026 Baidu.
 - **ANANTA OCR Block & Layout Components**: Derived from foundational open-source research from Bodhan AI, licensed under the **Apache License 2.0**. Copyright (c) 2026 Contributors.
+- **Third-Party Notices & Component Provenance**: See [NOTICES.md](NOTICES.md) for complete file-level attribution and upstream checkpoint licenses.
 
 ```text
 MIT License
