@@ -29,10 +29,14 @@ class Block:
 
     order: int
     label: str
-    type: str
-    bbox_xyxy: list[float]
-    conf: float
+    type: str = ""
+    bbox_xyxy: list[float] = field(default_factory=list)
+    conf: float = 1.0
     text: str | None = None
+
+    def __post_init__(self):
+        if not self.type and self.label:
+            self.type = map_label(self.label)
 
     def as_record(self) -> dict:
         """Serialize block to a stable dictionary format with rounded floats."""
@@ -68,11 +72,42 @@ class Block:
 class PageResult:
     """Document page parsing result containing all blocks and assembled markdown."""
 
-    image: str
-    width: int
-    height: int
+    image: str = ""
+    width: int = 0
+    height: int = 0
     blocks: list[Block] = field(default_factory=list)
     markdown: str | None = None
+    reading_order: list[int] | None = None
+
+    def __init__(
+        self,
+        image: str | None = None,
+        width: int = 0,
+        height: int = 0,
+        blocks: list[Block] | None = None,
+        markdown: str | None = None,
+        image_path: str | None = None,
+        image_size: tuple[int, int] | list[int] | None = None,
+        reading_order: list[int] | None = None,
+    ) -> None:
+        self.image = image if image is not None else (image_path if image_path is not None else "")
+        if image_size is not None and len(image_size) >= 2:
+            self.width = int(image_size[0])
+            self.height = int(image_size[1])
+        else:
+            self.width = int(width)
+            self.height = int(height)
+        self.blocks = blocks if blocks is not None else []
+        self.markdown = markdown
+        self.reading_order = reading_order
+
+    @property
+    def image_path(self) -> str:
+        return self.image
+
+    @property
+    def image_size(self) -> tuple[int, int]:
+        return (self.width, self.height)
 
     def as_record(self) -> dict:
         return {
@@ -85,9 +120,9 @@ class PageResult:
     @classmethod
     def from_record(cls, record: dict) -> PageResult:
         return cls(
-            image=str(record["image"]),
-            width=int(record["width"]),
-            height=int(record["height"]),
+            image=str(record.get("image", "")),
+            width=int(record.get("width", 0)),
+            height=int(record.get("height", 0)),
             blocks=[Block.from_record(b) for b in record.get("blocks", [])],
         )
 

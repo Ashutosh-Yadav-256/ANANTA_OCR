@@ -232,6 +232,60 @@ class TestAnantaPipeline(unittest.TestCase):
         self.assertEqual(safe_img.size, (200, 200))
         Path(temp_path).unlink(missing_ok=True)
 
+    def test_page_result_flexible_schema(self):
+        p1 = PageResult(image="doc1.png", width=800, height=600)
+        self.assertEqual(p1.image, "doc1.png")
+        self.assertEqual(p1.image_path, "doc1.png")
+        self.assertEqual(p1.image_size, (800, 600))
+
+        p2 = PageResult(image_path="doc2.png", image_size=(1200, 900))
+        self.assertEqual(p2.image, "doc2.png")
+        self.assertEqual(p2.width, 1200)
+        self.assertEqual(p2.height, 900)
+        self.assertEqual(p2.image_path, "doc2.png")
+        self.assertEqual(p2.image_size, (1200, 900))
+
+    def test_block_auto_type_resolution(self):
+        b = Block(order=1, label="Equation", bbox_xyxy=[0, 0, 50, 50], conf=0.92)
+        self.assertEqual(b.type, "Equation")
+        b2 = Block(order=2, label="Paragraph", bbox_xyxy=[0, 60, 50, 100], conf=0.88)
+        self.assertEqual(b2.type, "Text")
+
+    def test_hybrid_region_synthesis_no_duplication(self):
+        try:
+            from ananta_ocr import RegionResult
+        except ImportError:
+            from unified_pipeline import RegionResult
+
+        r1 = RegionResult(order=0, label="Title", type="Text", bbox_xyxy=[0, 0, 100, 30], engine="vlm", text="Document Title")
+        r2 = RegionResult(order=1, label="Paragraph", type="Text", bbox_xyxy=[0, 40, 100, 80], engine="vlm", text="First paragraph text.")
+        r3 = RegionResult(order=2, label="Equation", type="Equation", bbox_xyxy=[0, 90, 100, 120], engine="block", text="$$E = mc^2$$")
+        r4 = RegionResult(order=3, label="Paragraph", type="Text", bbox_xyxy=[0, 130, 100, 170], engine="vlm", text="Second paragraph text.")
+
+        blocks = [r.to_block() for r in [r1, r2, r3, r4]]
+        self.assertEqual(blocks[0].text, "Document Title")
+        self.assertEqual(blocks[1].text, "First paragraph text.")
+        self.assertEqual(blocks[2].text, "$$E = mc^2$$")
+        self.assertEqual(blocks[3].text, "Second paragraph text.")
+
+        md = reconstruct(blocks)
+        self.assertIn("Document Title", md)
+        self.assertIn("First paragraph text.", md)
+        self.assertIn("$$E = mc^2$$", md)
+        self.assertIn("Second paragraph text.", md)
+        self.assertEqual(md.count("Document Title"), 1)
+        self.assertEqual(md.count("First paragraph text."), 1)
+
+    def test_meetei_mayek_and_extended_indic_math_repair(self):
+        raw_math = "$x = ꯄ + y$"
+        repaired = repair_math(raw_math)
+        self.assertIn(r"\text{ꯄ}", repaired)
+
+        raw_hindi = "$$बल = द्रव्यमान \\times त्वरण$$"
+        repaired_hindi = repair_math(raw_hindi)
+        self.assertIn(r"\text{बल}", repaired_hindi)
+        self.assertIn(r"\text{द्रव्यमान}", repaired_hindi)
+
 
 if __name__ == "__main__":
     unittest.main()

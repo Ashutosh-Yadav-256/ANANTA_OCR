@@ -66,7 +66,9 @@ Pretrained weights used by ANANTA OCR are downloaded dynamically via `download_w
 | :--- | :--- | :--- | :--- |
 | Stage 1 Layout Detector | `bodhan-ai/indic-ocr` (layout) | Apache 2.0 | PyTorch / SafeTensors |
 | Stage 2 Block Recognizer | `bodhan-ai/indic-ocr` (recognizer) | Apache 2.0 | SafeTensors (262k Vocab) |
-| Multi-Page VLM | `ananta-ai/ananta-ocr-vlm` | MIT License | SafeTensors (~3B MoE) |
+| Multi-Page VLM Backbone | `baidu/Unlimited-OCR-2` | MIT License | SafeTensors (~3B MoE) |
+
+The multi-page VLM backbone weights are fetched from `baidu/Unlimited-OCR-2` on Hugging Face, licensed under the MIT License by Baidu Inc. ANANTA OCR adapts this foundational multimodal backbone with SR-SWA DASH sparse attention routing, custom autoregressive generation loops, and specialized prompt engineering.
 
 Pretrained model weights must be downloaded and used in accordance with their respective model cards and license agreements.
 

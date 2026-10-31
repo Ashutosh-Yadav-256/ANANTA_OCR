@@ -18,12 +18,22 @@ _MATH_DELIMITERS = ("$", "\\[", "\\(")
 # A math span: $$...$$ (display) or $...$ (inline)
 _MATH_SPAN = re.compile(r"\$\$(.+?)\$\$|(?<!\$)\$(?!\$)([^$\n]+?)\$(?!\$)", re.S)
 
-# Runs of Indic and Perso-Arabic scripts:
-# Arabic (Urdu, Kashmiri, Sindhi), Devanagari..Malayalam, and Ol Chiki (Santali).
+# Comprehensive Unicode coverage for all 22 official Indian languages and scripts:
+# - Arabic & Perso-Arabic (Urdu, Kashmiri, Sindhi): U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF
+# - Indic Major Scripts (Devanagari, Bengali, Gurmukhi, Gujarati, Odia, Tamil, Telugu, Kannada, Malayalam): U+0900-0D7F
+# - Vedic Extensions: U+1CD0-1CFF
+# - Devanagari Extended: U+A8E0-A8FF
+# - Ol Chiki (Santali): U+1C50-1C7F
+# - Meetei Mayek (Manipuri): U+ABC0-ABFF, U+AAE0-AAFF
+# - Tirhuta (Maithili): U+11480-114DF
+# - Grantha / Sharada: U+11300-1137F, U+11180-111DF
+_INDIC_RANGES = (
+    r"[\u0600-\u06ff\u0750-\u077f\u08a0-\u08ff\ufb50-\ufdff\ufe70-\ufeff"
+    r"\u0900-\u0d7f\u1cd0-\u1cff\ua8e0-\ua8ff\u1c50-\u1c7f\uabc0-\uabff\uaae0-\uaaff"
+    r"\U00011480-\U000114df\U00011180-\U000111df\U00011300-\U0001137f]"
+)
 _NON_LATIN_RUN = re.compile(
-    r"[\u0600-\u06ff\u0900-\u0d7f\u1c50-\u1c7f]"
-    r"(?:[\u0600-\u06ff\u0900-\u0d7f\u1c50-\u1c7f \u200c\u200d]*"
-    r"[\u0600-\u06ff\u0900-\u0d7f\u1c50-\u1c7f])?"
+    rf"{_INDIC_RANGES}(?:(?:{_INDIC_RANGES}|[ \u200c\u200d])*{_INDIC_RANGES})?"
 )
 _TEXT_CMD = re.compile(r"\\text\{[^{}]*\}")
 

@@ -27,6 +27,7 @@ from .ananta_engine import (
 )
 from .unified_pipeline import (
     UnifiedOCR,
+    RegionResult,
     classify_hybrid_block,
     HYBRID_BLOCK_CLASSES,
     HYBRID_NARRATIVE_CLASSES,
@@ -38,6 +39,7 @@ __all__ = [
     "AnantaBlockOCR",
     "AnantaClient",
     "UnifiedOCR",
+    "RegionResult",
     "classify_hybrid_block",
     "HYBRID_BLOCK_CLASSES",
     "HYBRID_NARRATIVE_CLASSES",

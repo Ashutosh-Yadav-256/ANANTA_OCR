@@ -24,28 +24,45 @@ from ..templates.contract import is_transcribed
 
 
 DEFAULT_MAX_IMAGE_PIXELS = int(os.environ.get("ANANTA_MAX_IMAGE_PIXELS", "100000000"))
+DEFAULT_MAX_IMAGE_BYTES = int(os.environ.get("ANANTA_MAX_IMAGE_BYTES", str(100 * 1024 * 1024)))
 
-
-def _open(image_path: str, max_pixels: int | None = None):
+try:
     from PIL import Image
+    Image.MAX_IMAGE_PIXELS = DEFAULT_MAX_IMAGE_PIXELS
+except ImportError:
+    pass
+
+
+def _open(
+    image_path: str,
+    max_pixels: int | None = None,
+    max_bytes: int | None = None,
+):
+    from PIL import Image
+    from pathlib import Path
+
+    p = Path(image_path)
+    byte_limit = max_bytes if max_bytes is not None else DEFAULT_MAX_IMAGE_BYTES
+    if byte_limit and p.is_file() and p.stat().st_size > byte_limit:
+        raise ValueError(
+            f"Image file size ({p.stat().st_size} bytes) exceeds safety limit of {byte_limit} bytes."
+        )
 
     limit = max_pixels if max_pixels is not None else DEFAULT_MAX_IMAGE_PIXELS
-    Image.MAX_IMAGE_PIXELS = limit
     try:
-        img = Image.open(image_path)
+        with Image.open(image_path) as img:
+            w, h = img.size
+            if limit is not None and (w * h) > limit:
+                raise ValueError(
+                    f"Image dimensions ({w}x{h} = {w * h} pixels) exceed safety limit of {limit} pixels. "
+                    "Set ANANTA_MAX_IMAGE_PIXELS environment variable to adjust."
+                )
+            return img.convert("RGB")
     except Image.DecompressionBombError as err:
         raise ValueError(
             f"Image exceeds safety limit of {limit} pixels: {err}. "
             "Set ANANTA_MAX_IMAGE_PIXELS environment variable to adjust."
         ) from err
-
-    w, h = img.size
-    if limit is not None and (w * h) > limit:
-        raise ValueError(
-            f"Image dimensions ({w}x{h} = {w * h} pixels) exceed safety limit of {limit} pixels. "
-            "Set ANANTA_MAX_IMAGE_PIXELS environment variable to adjust."
-        )
-    return img.convert("RGB")
 
 
 def _as_page(layout: PageResult | dict | str) -> PageResult:

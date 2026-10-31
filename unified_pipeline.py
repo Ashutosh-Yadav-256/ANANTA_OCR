@@ -78,6 +78,44 @@ def classify_hybrid_block(label: str) -> str:
 
 
 @dataclass
+class RegionResult:
+    """Canonical representation of an individually routed document region."""
+
+    order: int
+    label: str
+    type: str
+    bbox_xyxy: list[float]
+    engine: str
+    text: str = ""
+    conf: float = 1.0
+    error: str | None = None
+
+    def as_record(self) -> dict[str, Any]:
+        rec: dict[str, Any] = {
+            "order": self.order,
+            "label": self.label,
+            "type": self.type,
+            "bbox_xyxy": [round(float(v), 1) for v in self.bbox_xyxy],
+            "engine": self.engine,
+            "conf": round(float(self.conf), 3),
+            "text": self.text,
+        }
+        if self.error:
+            rec["error"] = self.error
+        return rec
+
+    def to_block(self) -> Block:
+        return Block(
+            order=self.order,
+            label=self.label,
+            type=self.type,
+            bbox_xyxy=self.bbox_xyxy,
+            conf=self.conf,
+            text=self.text if not self.error else "",
+        )
+
+
+@dataclass
 class UnifiedOCRResult:
     """Unified result container for ANANTA OCR."""
 
@@ -336,10 +374,11 @@ class UnifiedOCR:
     ) -> UnifiedOCRResult:
         """Cooperative hybrid execution:
         1. AnantaDocLayout performs 37-class structural partitioning and reading-order recovery.
-        2. Content-Type Router dispatches complex structured regions (tables, equations, formulas)
+        2. Content-Type Router maps complex structured regions (tables, equations, formulas)
            to AnantaBlockOCR for specialized prompt execution and LaTeX/HTML formatting.
         3. Continuous narrative prose is contextualized/transcribed via Ananta VLM when available.
-        4. Synthesizer merges all regions according to the topological reading order.
+        4. Region-level output merging: each region retains its own distinct, non-duplicated text.
+        5. Synthesizer merges all regions according to the topological reading order.
         """
         layout_stage = self._get_block_layout()
         ocr_stage = self._get_block_recognizer()
@@ -362,85 +401,59 @@ class UnifiedOCR:
         for img_path in image_list:
             page_layout = layout_stage.detect(img_path)
 
-            block_blocks: list[Block] = []
-            vlm_blocks: list[Block] = []
-            routing_metadata: list[dict[str, Any]] = []
+            ocr_res = ocr_stage.run(img_path, page_layout)
+            crop_text_map: dict[int, str] = {b.order: (b.text or "") for b in ocr_res.blocks}
 
-            for blk in page_layout.blocks:
-                target = classify_hybrid_block(blk.label)
-                routed_engine = target if (target == "block" or has_vlm) else "block"
-                routing_metadata.append({
-                    "order": blk.order,
-                    "label": blk.label,
-                    "target": target,
-                    "executed_by": routed_engine,
-                    "bbox_xyxy": blk.bbox_xyxy,
-                })
-                if target == "block" or not has_vlm:
-                    block_blocks.append(blk)
-                else:
-                    vlm_blocks.append(blk)
-
-            block_layout_sub = PageResult(
-                image_path=page_layout.image_path,
-                image_size=page_layout.image_size,
-                blocks=block_blocks,
-                reading_order=page_layout.reading_order,
-                markdown=None,
-            )
-            block_res = ocr_stage.run(img_path, block_layout_sub)
-
-            vlm_text_map: dict[int, str] = {}
-            if has_vlm and vlm_blocks:
+            vlm_doc_context: str | None = None
+            if has_vlm:
                 try:
-                    vlm_model, vlm_tokenizer = self._get_vlm()
                     vlm_res = self._process_vlm([img_path], output_dir=None, save_results=False)
-                    vlm_full_text = vlm_res.markdown or ""
-                    for vb in vlm_blocks:
-                        vlm_text_map[vb.order] = vlm_full_text
+                    vlm_doc_context = vlm_res.markdown or ""
                 except Exception:
-                    vlm_layout_sub = PageResult(
-                        image_path=page_layout.image_path,
-                        image_size=page_layout.image_size,
-                        blocks=vlm_blocks,
-                        reading_order=page_layout.reading_order,
-                        markdown=None,
-                    )
-                    fallback_res = ocr_stage.run(img_path, vlm_layout_sub)
-                    for fb in fallback_res.blocks:
-                        vlm_text_map[fb.order] = fb.text or ""
+                    vlm_doc_context = None
 
-            ordered_blocks: list[Block] = []
-            all_text_blocks = {b.order: b for b in block_res.blocks}
+            region_results: list[RegionResult] = []
             for blk in page_layout.blocks:
-                if blk.order in all_text_blocks:
-                    ordered_blocks.append(all_text_blocks[blk.order])
-                elif blk.order in vlm_text_map:
-                    v_blk = Block(
-                        bbox_xyxy=blk.bbox_xyxy,
-                        label=blk.label,
-                        conf=blk.conf,
-                        order=blk.order,
-                        text=vlm_text_map[blk.order],
-                    )
-                    ordered_blocks.append(v_blk)
+                target_engine = classify_hybrid_block(blk.label)
+                block_content = crop_text_map.get(blk.order, "")
+
+                region = RegionResult(
+                    order=blk.order,
+                    label=blk.label,
+                    type=blk.type or map_label(blk.label),
+                    bbox_xyxy=blk.bbox_xyxy,
+                    engine=target_engine,
+                    text=block_content,
+                    conf=blk.conf,
+                )
+                region_results.append(region)
+
+            region_results.sort(key=lambda r: r.order)
+            ordered_blocks = [r.to_block() for r in region_results]
 
             from .ananta_engine.engine.reconstruct import reconstruct
             final_markdown = reconstruct(ordered_blocks)
 
+            count_block = sum(1 for r in region_results if r.engine == "block")
+            count_vlm = sum(1 for r in region_results if r.engine == "vlm")
+
             page_dict = {
-                "image_path": img_path,
-                "image_size": page_layout.image_size,
+                "image": page_layout.image,
+                "width": page_layout.width,
+                "height": page_layout.height,
                 "routing_summary": {
-                    "total_blocks": len(page_layout.blocks),
-                    "block_engine_routed": len(block_blocks),
-                    "vlm_engine_routed": len(vlm_blocks),
+                    "total_regions": len(region_results),
+                    "block_engine_regions": count_block,
+                    "vlm_engine_regions": count_vlm,
                     "vlm_active": has_vlm,
                 },
-                "routing_manifest": routing_metadata,
+                "regions": [r.as_record() for r in region_results],
                 "blocks": [b.as_record() for b in ordered_blocks],
                 "markdown": final_markdown,
             }
+            if vlm_doc_context:
+                page_dict["vlm_document_context"] = vlm_doc_context
+
             page_results.append(page_dict)
 
             if final_markdown:

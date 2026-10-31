@@ -27,7 +27,7 @@ A unified visual document parsing architecture combining unlimited-horizon multi
 
 ANANTA OCR unifies two document understanding paradigms into a single engine:
 
-1. **Ananta VLM Engine (`vlm`)**: A multi-page Vision-Language Model engineered for ultra-long documents (100+ pages). Utilizes dual-backbone visual compression (SAM-ViT-B + CLIP-L) to compress standard $1024 \times 1024$ pages into 273 visual tokens (16x spatial downsampling). Employs Sparse Reference Sliding Window Attention (SR-SWA / DASH) with 1.5-entmax routing to ensure strictly bounded $O(1)$ decoding memory and latency per step over a DeepSeek-V2 Mixture-of-Experts (MoE) decoder.
+1. **Ananta VLM Engine (`vlm`)**: A multi-page Vision-Language Model engineered for ultra-long documents (100+ pages). Utilizes dual-backbone visual compression (SAM-ViT-B + CLIP-L) to compress standard $1024 \times 1024$ pages into 273 visual tokens (16x spatial downsampling). Employs Sparse Reference Sliding Window Attention (SR-SWA / DASH) with 1.5-entmax routing to bound active attention computation per query step over a DeepSeek-V2 Mixture-of-Experts (MoE) decoder, eliminating quadratic dense attention overhead across multi-page document sequences.
 2. **Ananta Block Engine (`block`)**: A high-precision two-stage pipeline. Stage 1 employs AnantaDocLayout (PP-DocLayoutV3 RT-DETR, 33M parameters) to detect a 37-class document taxonomy with an antisymmetric reading-order head. Stage 2 executes AnantaBlockOCR (Qwen3.5-0.8B VLM) with a 262,144-token multilingual vocabulary covering all 22 official Indian languages and English, utilizing specialized prompts for prose, display equations, and merged HTML tables.
 3. **Ananta Hybrid Engine (`hybrid`)**: Combines AnantaDocLayout topological segmentation with dynamic multi-engine routing, allocating complex visual regions to AnantaBlockOCR while preserving global document coherence through Ananta VLM.
 
@@ -285,7 +285,7 @@ $$\text{Attention}(Q, K, V) = \text{Softmax}\left(\frac{Q K_{\text{active}}^T}{\
 
 Where:
 - $K_{\text{active}}$ consists of 12 global visual reference blocks dynamically selected via differentiable 1.5-entmax routing over precomputed block summaries, plus a local sliding window of 128 dynamic text tokens.
-- Constant $O(1)$ decoding memory and step latency are preserved uniformly from Page 1 to Page 100+.
+- By restricting active attention to a 128-token local window and 12 dynamically routed remote blocks per query, SR-SWA DASH bounds the per-step attention kernel computation relative to full quadratic $O(N^2)$ self-attention across 100+ pages.
 
 ### DeepSeek-V2 Lineage MoE Decoder
 
@@ -484,7 +484,7 @@ ANANTA OCR includes an automated unit test suite verifying geometric filtering, 
 python -m unittest discover -s tests -v
 ```
 
-All 15 automated test cases validate deterministic behavior across all supported subsystems.
+All automated test cases validate deterministic behavior across all supported subsystems.
 
 ---
 
