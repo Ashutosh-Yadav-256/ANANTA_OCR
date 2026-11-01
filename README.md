@@ -1,6 +1,8 @@
-# ANANTA OCR: Advanced Visual Document Intelligence
-
 <div align="center">
+
+<img src="assets/banner.png" alt="ANANTA OCR: Multilingual Visual Document Intelligence" width="100%">
+
+# ANANTA OCR: Advanced Visual Document Intelligence
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-green.svg)](https://www.apache.org/licenses/LICENSE-2.0)
